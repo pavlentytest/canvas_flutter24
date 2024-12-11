@@ -1,19 +1,60 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 
-void main() {
-  runApp(const BasicExample());
-}
+void main() async => runApp(const MyApp());
 
-class BasicExample extends StatelessWidget{
-  const BasicExample({super.key});
-
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MyHomePage(),
+    );
+  }
+}
 
-    return CustomPaint(
-      painter: HousePainter()
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) => CustomPaint(
+                painter: HousePainter(timeOfDayAnimation: _controller),
+                willChange: true,
+                child: Container(),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -42,12 +83,11 @@ class HousePainter extends CustomPainter{
     begin: Colors.yellow.shade600,
   ).chain(CurveTween(curve: Curves.easeInOutQuint));
 
+  final Animation<double> timeOfDayAnimation;
 
- // final Animation<double> timeOfDayAnimation;
-
-  //const HousePainter({
-  //  required this.timeOfDayAnimation,
-  //}) : super(repaint: timeOfDayAnimation);
+  const HousePainter({
+    required this.timeOfDayAnimation,
+  }) : super(repaint: timeOfDayAnimation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -65,7 +105,8 @@ class HousePainter extends CustomPainter{
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 
   void _drawSky(Canvas canvas) {
-    canvas.drawPaint(Paint()..color = Colors.blue.shade300);
+    canvas.drawPaint(Paint()
+      ..color = _skyTween.evaluate(timeOfDayAnimation) ?? Colors.transparent);
   }
 
   void _drawGround(Canvas canvas, Size size) {
@@ -191,7 +232,8 @@ class HousePainter extends CustomPainter{
   }
 
   void _drawWindow(Canvas canvas, Size size) {
-    final painter = Paint()..color = Colors.white;
+    final painter = Paint()
+      ..color = _windowTween.evaluate(timeOfDayAnimation) ?? Colors.transparent;
 
     final horizontalCenter = size.width / 2;
 
